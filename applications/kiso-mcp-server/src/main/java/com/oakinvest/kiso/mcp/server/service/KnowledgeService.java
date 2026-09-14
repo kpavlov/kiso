@@ -37,6 +37,7 @@ import static com.oakinvest.kiso.core.util.types.MarkdownFileKind.CONCEPT;
 import static com.oakinvest.kiso.mcp.server.service.KnowledgeIndexFields.BODY;
 import static com.oakinvest.kiso.mcp.server.service.KnowledgeIndexFields.CONCEPT_ID;
 import static com.oakinvest.kiso.mcp.server.service.KnowledgeIndexFields.DESCRIPTION;
+import static com.oakinvest.kiso.mcp.server.service.KnowledgeIndexFields.TAGS;
 import static com.oakinvest.kiso.mcp.server.service.KnowledgeIndexFields.TITLE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -186,6 +187,8 @@ public class KnowledgeService {
         final String conceptId = markdownFile.conceptId();
         if (conceptId != null) {
             document.add(new StringField(CONCEPT_ID, conceptId, Field.Store.YES));
+        } else {
+            return; // We skip the document if the concept ID is null, as it is required for indexing.
         }
 
         // Title =======================================================================================================
@@ -203,7 +206,7 @@ public class KnowledgeService {
         // Tags ========================================================================================================
         final String tags = String.join(" ", markdownFile.frontmatter().tags());
         if (StringUtils.isNotBlank(tags)) {
-            document.add(new TextField(DESCRIPTION, tags, Field.Store.YES));
+            document.add(new TextField(TAGS, tags, Field.Store.YES));
         }
 
         // Body ========================================================================================================
