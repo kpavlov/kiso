@@ -6,14 +6,16 @@ import com.oakinvest.kiso.mcp.server.ApplicationVersion;
 import com.oakinvest.kiso.mcp.server.option.HostOption;
 import com.oakinvest.kiso.mcp.server.option.PortOption;
 import com.oakinvest.kiso.mcp.server.option.SourceOption;
+import com.oakinvest.kiso.mcp.server.service.KnowledgeSearchResult;
 import com.oakinvest.kiso.mcp.server.service.KnowledgeService;
+import dev.tachyonmcp.api.json.JsonSchema;
 import dev.tachyonmcp.api.server.features.tools.ToolResult;
 import dev.tachyonmcp.api.server.features.tools.Tools;
 import dev.tachyonmcp.core.server.TachyonServer;
 import picocli.CommandLine;
 
 import java.io.File;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Starts the Kiso MCP server.
@@ -37,6 +39,9 @@ public class ServeCommand extends AbstractCommand implements Runnable {
     @CommandLine.Spec
     private CommandLine.Model.CommandSpec commandSpec;
 
+    private record SearchResults(List<KnowledgeSearchResult> results) {
+    }
+
     /**
      * Registers the knowledge tools.
      *
@@ -49,7 +54,7 @@ public class ServeCommand extends AbstractCommand implements Runnable {
                 // Builder for the search concept tool
                 builder -> builder.name("search_concepts")
                         .description("Searches concepts in the knowledge bundle.")
-                        .inputSchema("""
+                        .inputSchema(JsonSchema.parse("""
                                 {
                                   "type": "object",
                                   "properties": {
@@ -58,11 +63,12 @@ public class ServeCommand extends AbstractCommand implements Runnable {
                                   "required": ["text"],
                                   "additionalProperties": false
                                 }
-                                """),
+                                """))
+                        .outputSchema(JsonSchema.generate(SearchResults.class)),
                 // Handler for the search concept tool
                 (context, request) -> {
                     final String text = request.arguments().stringOpt("text").orElseThrow();
-                    return ToolResult.structured(Map.of("results", knowledgeService.searchConcept(text)));
+                    return ToolResult.structured(new SearchResults(knowledgeService.searchConcept(text)));
                 });
 
         // Get concept content tool: returns the Markdown content of a concept =========================================
@@ -70,7 +76,7 @@ public class ServeCommand extends AbstractCommand implements Runnable {
                 // Builder for the get concept content tool
                 builder -> builder.name("get_concept_content")
                         .description("Returns the Markdown content of a concept.")
-                        .inputSchema("""
+                        .inputSchema(JsonSchema.parse("""
                                 {
                                   "type": "object",
                                   "properties": {
@@ -79,7 +85,8 @@ public class ServeCommand extends AbstractCommand implements Runnable {
                                   "required": ["conceptId"],
                                   "additionalProperties": false
                                 }
-                                """),
+                                """)
+                        ),
                 // Handler for the get concept content tool
                 (context, request) -> {
                     final String conceptId = request.arguments().stringOpt("conceptId").orElseThrow();
